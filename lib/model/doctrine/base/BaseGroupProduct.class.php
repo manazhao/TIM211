@@ -31,15 +31,17 @@ abstract class BaseGroupProduct extends sfDoctrineRecord
              'primary' => true,
              'autoincrement' => true,
              ));
-        $this->hasColumn('group_id', 'integer', null, array(
+        $this->hasColumn('group_id', 'integer', 2, array(
              'type' => 'integer',
              'notnull' => true,
              'default' => 0,
+             'length' => 2,
              ));
-        $this->hasColumn('product_id', 'integer', null, array(
+        $this->hasColumn('product_id', 'integer', 2, array(
              'type' => 'integer',
              'notnull' => true,
              'default' => 0,
+             'length' => 2,
              ));
 
         $this->option('type', 'INNODB');

@@ -12,4 +12,6 @@
  */
 class Transaction extends BaseTransaction
 {
+	const STATUS_PENDING = 0x1;
+	const STATUS_ACCEPTED = 0x2;
 }

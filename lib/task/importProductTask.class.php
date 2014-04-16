@@ -45,9 +45,9 @@ EOF;
 	}
 	
 
+	
 	protected function execute($arguments = array(), $options = array())
 	{
-		return;
 		// initialize the database connection
 		$databaseManager = new sfDatabaseManager($this->configuration);
 		$connection = $databaseManager->getDatabase($options['connection'])->getConnection();

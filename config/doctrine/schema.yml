@@ -43,11 +43,11 @@ GroupProduct:
    primary: true
    autoincrement: true
   group_id:
-   type: integer
+   type: integer(2)
    notnull: true
    default: 0
   product_id:
-   type: integer
+   type: integer(2)
    notnull: true
    default: 0
 
@@ -58,18 +58,26 @@ Transaction:
    primary: true
    autoincrement: true
   from_id:
-   type: integer
-   notnull: true
-   default: 0
-  to_id:
-   type: integer
-   notnull: true
-   default: 0
-  round:
    type: integer(2)
    notnull: true
    default: 0
-  status:
-   type: boolean
+  to_id:
+   type: integer(2)
    notnull: true
-   default: false
+   default: 0
+  product:
+   type: integer(2)
+   notnull: true
+   default: 0
+  price:
+   type: float
+   notnull: true
+   default: 0
+  start_time:
+   type: datetime
+  end_time:
+   type: datetime
+  status:
+   type: integer(1)
+   notnull: true
+   default: 0

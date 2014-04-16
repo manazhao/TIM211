@@ -81,14 +81,10 @@ class serviceActions extends sfActions
 			}
 			$productArray[] = $tmpProduct;
 		}
-		return $productArray;		
+		return $productArray;
 	}
 
-	
-	
-	public function executeQueryProductInfo(sfWebRequest $request){
-		/// intialize the static variables
-		$this->initStatic();
+	protected function verifyGroup($request, &$response){
 		$response = array("status" => "success", "message" =>"nothing to worry about");
 		/// query products of this group or other groups
 		/// expect token and group id from $request
@@ -104,12 +100,107 @@ class serviceActions extends sfActions
 			}else{
 				/// valid token, try to identify the group id
 				$groupId = $player->getId();
-				/// pull out all products
-				$productInfo= $this->getProductInfo($groupId);
-				$response["product_info"] = $productInfo;
+				$response["group_id"] = $groupId;
+			}
+			return $player;
+		}
+		return null;
+	}
+
+	public function executeOfferProduct(sfWebRequest $request){
+		/// offer a product to a group
+		$response = array();
+		if($this->verifyGroup($request, $response)){
+			$groupId = $response["group_id"];
+			/// check group id of recipient, price and product id
+			$isGood = true;
+			$recipientGrp = $request->getParameter("recipient");
+			$product = $request->getParameter("product");
+			$price = $request->getParameter("price");
+			if(is_null($recipientGrp) || is_null($product) || is_null($price)){
+				$response["status"] = "fail";
+				$response["message"] = "recipient group id, product id, price must be provided";
+				$isGood = false;
+			}
+			$recipientGrpObj = null;
+			$productObj = null;
+			if($isGood){
+				$recipientGrpObj = Doctrine_Core::getTable("Player")->find($recipientGrp);
+				if(!$recipientGrpObj){
+					$response["status"] = "fail";
+					$response["message"] = "invalid recipient specified, please check";
+				}
+				$productObj = Doctrine_Core::getTable("Product")->find($product);
+				if(!$productObj){
+					$isGood = false;
+					$response["status"] = "fail";
+					$response["message"] = "invalid product id specified, please check";
+				}
+				/// check price format
+				if(!is_numeric($price)){
+					$isGood = false;
+					$response["status"] = "fail";
+					$response["message"] = "price must be numeric";
+				}
+			}
+			if($recipientGrp == $groupId){
+				$isGood = false;
+				$response["status"] = "fail";
+				$response["message"] = "sell to yourself? sounds an interesting idea:-)";
+			}
+			if($isGood){
+				/// further checkk whether user really owns the product!
+				$result = Doctrine_Core::getTable("GroupProduct")->createQuery("q")->where("q.group_id=?",$groupId)->andWhere("product_id=?",$product)->execute();
+				if(count($result) == 0){
+					$isGood = false;
+					$response["status"] = "fail";
+					$response["message"] = "oops... only sell your own products!";					
+				}
+			}
+			if($isGood){
+				/// make the offer!
+				$transaction = new Transaction();
+				$transaction->setFromId($groupId);
+				$transaction->setToId($recipientGrp);
+				$transaction->setProduct($product);
+				$transaction->setPrice($price);
+				$date = date("Y-m-d H:i:s",time());
+				$transaction->setStartTime($date);
+				$transaction->setEndTime($date);
+				$transaction->setStatus(Transaction::STATUS_PENDING);
+				$transaction->save();
 			}
 		}
+		$this->getResponse()->setContent(json_encode($response));
+		return sfView::NONE;
+	}
+
+
+	public function executeQuerySetting(sfWebRequest $request){
+		$response = array();
 		$this->getResponse()->setContentType("application/json");
+		if($this->verifyGroup($request, $response)){
+			$response["num_groups"] = self::$NUM_GROUPS;
+			$response["num_products"] = self::$NUM_PRODUCTS;
+			$this->getResponse()->setContent(json_encode($response));
+		}
+		return sfView::NONE;
+	}
+
+	public function preExecute(){
+		$this->initStatic();
+		parent::preExecute();	
+	}
+	
+	public function executeQueryProductInfo(sfWebRequest $request){
+		/// intialize the static variables
+		$response = array();
+		$this->getResponse()->setContentType("application/json");
+		if($this->verifyGroup($request, $response)){
+			/// pull out all products
+			$productInfo= $this->getProductInfo($response["group_id"]);
+			$response["product_info"] = $productInfo;
+		}
 		$this->getResponse()->setContent(json_encode($response));
 		return sfView::NONE;
 	}
