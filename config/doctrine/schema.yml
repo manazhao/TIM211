@@ -1,0 +1,75 @@
+options:
+ type: INNODB
+ 
+Player:
+ columns:
+  id:
+   type: integer(2)
+   primary: true
+   autoincrement: true
+  name:
+   type: string(32)
+  token:
+   type: string(255)
+   notnull: true
+   
+Product:
+ columns:
+  id:
+   type: integer(2)
+   primary: true
+   autoincrement: true
+  producer:
+   type: integer(2)
+   notnull: true
+   default: 0
+  consumer:
+   type: integer(2)
+   notnull: true
+   default: 0
+  cost:
+   type: float
+   notnull: true
+   default: 0
+  utility:
+   type: float
+   notnull: true
+   default: 0
+
+GroupProduct:
+ columns:
+  id:
+   type: integer
+   primary: true
+   autoincrement: true
+  group_id:
+   type: integer
+   notnull: true
+   default: 0
+  product_id:
+   type: integer
+   notnull: true
+   default: 0
+
+Transaction:
+ columns:
+  id:
+   type: integer
+   primary: true
+   autoincrement: true
+  from_id:
+   type: integer
+   notnull: true
+   default: 0
+  to_id:
+   type: integer
+   notnull: true
+   default: 0
+  round:
+   type: integer(2)
+   notnull: true
+   default: 0
+  status:
+   type: boolean
+   notnull: true
+   default: false

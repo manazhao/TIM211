@@ -1,3 +1,4 @@
-/CACHE
-/LOG
-
+cache/
+log/
+tmp*
+*.bk
