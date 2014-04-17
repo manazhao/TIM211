@@ -70,13 +70,13 @@ class serviceActions extends sfActions
 		$consumedIds = $this->getAcquiredByGroup($groupId);
 		foreach($products as $product){
 			$productId = $product->getId();
-			$tmpProduct = array("id" => $product->getId(), "is_producer" => false, "is_consumer" => false);
+			$tmpProduct = array("id" => $product->getId(), "is_producer" => 0, "is_consumer" => 0);
 			if(isset($producedIds[$productId])){
-				$tmpProduct["is_producer"] = true;
+				$tmpProduct["is_producer"] = 1;
 				$tmpProduct["cost"] = $product->getCost();
 			}
 			if(isset($consumedIds[$productId])){
-				$tmpProduct["is_consumer"] = true;
+				$tmpProduct["is_consumer"] = 1;
 				$tmpProduct["utility"] = $product->getUtility();
 			}
 			$productArray[] = $tmpProduct;
@@ -182,8 +182,8 @@ class serviceActions extends sfActions
 		if($this->verifyGroup($request, $response)){
 			$response["num_groups"] = self::$NUM_GROUPS;
 			$response["num_products"] = self::$NUM_PRODUCTS;
-			$this->getResponse()->setContent(json_encode($response));
 		}
+		$this->getResponse()->setContent(json_encode($response));
 		return sfView::NONE;
 	}
 
