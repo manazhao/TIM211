@@ -7,14 +7,17 @@
  * 
  * @property integer $id
  * @property string $name
+ * @property float $profit
  * @property string $token
  * 
- * @method integer getId()    Returns the current record's "id" value
- * @method string  getName()  Returns the current record's "name" value
- * @method string  getToken() Returns the current record's "token" value
- * @method Player  setId()    Sets the current record's "id" value
- * @method Player  setName()  Sets the current record's "name" value
- * @method Player  setToken() Sets the current record's "token" value
+ * @method integer getId()     Returns the current record's "id" value
+ * @method string  getName()   Returns the current record's "name" value
+ * @method float   getProfit() Returns the current record's "profit" value
+ * @method string  getToken()  Returns the current record's "token" value
+ * @method Player  setId()     Sets the current record's "id" value
+ * @method Player  setName()   Sets the current record's "name" value
+ * @method Player  setProfit() Sets the current record's "profit" value
+ * @method Player  setToken()  Sets the current record's "token" value
  * 
  * @package    ProductTrading
  * @subpackage model
@@ -35,6 +38,10 @@ abstract class BasePlayer extends sfDoctrineRecord
         $this->hasColumn('name', 'string', 32, array(
              'type' => 'string',
              'length' => 32,
+             ));
+        $this->hasColumn('profit', 'float', null, array(
+             'type' => 'float',
+             'default' => 0,
              ));
         $this->hasColumn('token', 'string', 255, array(
              'type' => 'string',

@@ -44,8 +44,6 @@ EOF;
 		}
 	}
 	
-
-	
 	protected function execute($arguments = array(), $options = array())
 	{
 		// initialize the database connection
@@ -78,13 +76,9 @@ EOF;
 				if($product){
 					$product->setProducer($playerId);
 					$product->setCost($tmpCost);
+					$product->setHolder($playerId);
 					$product->save();
 				}
-				/// generate group->product entries
-				$grpProduct = new GroupProduct();
-				$grpProduct->setGroupId($playerId);
-				$grpProduct->setProductId($id);
-				$grpProduct->save();
 			}
 			
 			$toAcquire = $groupProduct["to_acquire"];

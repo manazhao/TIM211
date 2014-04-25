@@ -13,13 +13,15 @@ abstract class BasePlayerFormFilter extends BaseFormFilterDoctrine
   public function setup()
   {
     $this->setWidgets(array(
-      'name'  => new sfWidgetFormFilterInput(),
-      'token' => new sfWidgetFormFilterInput(array('with_empty' => false)),
+      'name'   => new sfWidgetFormFilterInput(),
+      'profit' => new sfWidgetFormFilterInput(),
+      'token'  => new sfWidgetFormFilterInput(array('with_empty' => false)),
     ));
 
     $this->setValidators(array(
-      'name'  => new sfValidatorPass(array('required' => false)),
-      'token' => new sfValidatorPass(array('required' => false)),
+      'name'   => new sfValidatorPass(array('required' => false)),
+      'profit' => new sfValidatorSchemaFilter('text', new sfValidatorNumber(array('required' => false))),
+      'token'  => new sfValidatorPass(array('required' => false)),
     ));
 
     $this->widgetSchema->setNameFormat('player_filters[%s]');
@@ -39,9 +41,10 @@ abstract class BasePlayerFormFilter extends BaseFormFilterDoctrine
   public function getFields()
   {
     return array(
-      'id'    => 'Number',
-      'name'  => 'Text',
-      'token' => 'Text',
+      'id'     => 'Number',
+      'name'   => 'Text',
+      'profit' => 'Number',
+      'token'  => 'Text',
     );
   }
 }

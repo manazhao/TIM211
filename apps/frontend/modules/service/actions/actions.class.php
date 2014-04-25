@@ -12,6 +12,7 @@ class serviceActions extends sfActions
 {
 	protected static $NUM_GROUPS = 0;
 	protected static $NUM_PRODUCTS = 0;
+	public static $SETTING = NULL;
 	/**
 	 * Executes index action
 	 *
@@ -20,6 +21,24 @@ class serviceActions extends sfActions
 	public function executeIndex(sfWebRequest $request)
 	{
 		$this->forward('default', 'module');
+	}
+
+	public function executeTest(sfWebRequest $request){
+
+		$this->getResponse()->setContent("just for test");
+		return sfView::NONE;
+	}
+
+	public static  function getClockInfo(){
+		$curTime = time();
+		/// convert the start time string into time stamp
+		$startTimestamp = strtotime(serviceActions::$SETTING["trading.start.time"]);
+		$curTimestamp = time();
+		$secondsElapsed = $curTimestamp - $startTimestamp;
+		$periodLength = 60 * serviceActions::$SETTING["trading.circle"];
+		$periodIdx = (int)($secondsElapsed / $periodLength);
+		$rndIdx = ($secondsElapsed % $periodLength) > ($periodLength/2) ? 1 : 0;
+		return array("period.idx" => $periodIdx,"rnd.a" => (int)!$rndIdx, "rnd.b" => $rndIdx);
 	}
 
 	protected function initStatic(){
@@ -34,6 +53,15 @@ class serviceActions extends sfActions
 			$results = $q->execute();
 			serviceActions::$NUM_PRODUCTS = count($results);
 		}
+		// 		if(is_null(self::$SETTING)){
+		/// load the setting from the configuration file
+		$configFile = __DIR__ . "/experiment-setting.ini";
+		/// check existence
+		if(!file_exists($configFile)){
+			throw new Exception("experimental setting file:" + $configFile + " does not exist");
+		}
+		self::$SETTING = parse_ini_file($configFile);
+		// 		}
 	}
 
 	protected function verifyGroupByToken($token){
@@ -107,9 +135,17 @@ class serviceActions extends sfActions
 		return null;
 	}
 
+	public function executeQueryClock(sfWebRequest $request){
+		$response = self::getClockInfo();
+		$this->getResponse()->setContentType("application/json");
+		$this->getResponse()->setContent(json_encode($response));
+		return sfView::NONE;
+	}
+
 	public function executeOfferProduct(sfWebRequest $request){
 		/// offer a product to a group
 		$response = array();
+		$this->getResponse()->setContentType("application/json");
 		if($this->verifyGroup($request, $response)){
 			$groupId = $response["group_id"];
 			/// check group id of recipient, price and product id
@@ -117,65 +153,100 @@ class serviceActions extends sfActions
 			$recipientGrp = $request->getParameter("recipient");
 			$product = $request->getParameter("product");
 			$price = $request->getParameter("price");
-			if(is_null($recipientGrp) || is_null($product) || is_null($price)){
+			$firstRefFee = $request->getParameter("firstRefFee");
+			$secondRefFee = $request->getParameter("secondRefFee");
+			if(is_null($recipientGrp) || is_null($product) || is_null($price) || is_null($firstRefFee) || is_null($secondRefFee)){
 				$response["status"] = "fail";
-				$response["message"] = "recipient group id, product id, price must be provided";
+				$response["message"] = "recipient group id, product id, price, first degree referral fee and second degree referral fee must be provided";
 				$isGood = false;
 			}
-			$recipientGrpObj = null;
-			$productObj = null;
 			if($isGood){
-				$recipientGrpObj = Doctrine_Core::getTable("Player")->find($recipientGrp);
-				if(!$recipientGrpObj){
-					$response["status"] = "fail";
-					$response["message"] = "invalid recipient specified, please check";
-				}
-				$productObj = Doctrine_Core::getTable("Product")->find($product);
-				if(!$productObj){
-					$isGood = false;
-					$response["status"] = "fail";
-					$response["message"] = "invalid product id specified, please check";
-				}
-				/// check price format
-				if(!is_numeric($price)){
-					$isGood = false;
-					$response["status"] = "fail";
-					$response["message"] = "price must be numeric";
-				}
-			}
-			if($recipientGrp == $groupId){
-				$isGood = false;
-				$response["status"] = "fail";
-				$response["message"] = "sell to yourself? sounds an interesting idea:-)";
-			}
-			if($isGood){
-				/// further checkk whether user really owns the product!
-				$result = Doctrine_Core::getTable("GroupProduct")->createQuery("q")->where("q.group_id=?",$groupId)->andWhere("product_id=?",$product)->execute();
-				if(count($result) == 0){
-					$isGood = false;
-					$response["status"] = "fail";
-					$response["message"] = "oops... only sell your own products!";					
-				}
-			}
-			if($isGood){
-				/// make the offer!
-				$transaction = new Transaction();
-				$transaction->setFromId($groupId);
-				$transaction->setToId($recipientGrp);
-				$transaction->setProduct($product);
-				$transaction->setPrice($price);
-				$date = date("Y-m-d H:i:s",time());
-				$transaction->setStartTime($date);
-				$transaction->setEndTime($date);
-				$transaction->setStatus(Transaction::STATUS_PENDING);
-				$transaction->save();
+				$group = Doctrine_Core::getTable("Player")->find($groupId);
+				$group->offerProduct($recipientGrp,$product,$price,$firstRefFee,$secondRefFee,$response);
 			}
 		}
 		$this->getResponse()->setContent(json_encode($response));
 		return sfView::NONE;
 	}
 
+	public function executeReferProduct(sfWebRequest $request){
+		/// offer a product to a group
+		$response = array();
+		$this->getResponse()->setContentType("application/json");
+		if($this->verifyGroup($request, $response)){
+			$groupId = $response["group_id"];
+			/// check group id of recipient, price and product id
+			$isGood = true;
+			$recipientGrp = $request->getParameter("recipient");
+			$transactionId = $request->getParameter("transactionId");
+			if(is_null($recipientGrp) || is_null($transactionId)){
+				$response["status"] = "fail";
+				$response["message"] = "recipient group id, transaction id must be supplied";
+				$isGood = false;
+			}
+			if($isGood){
+				$group = Doctrine_Core::getTable("Player")->find($groupId);
+				$group->referProduct($recipientGrp,$transactionId,$response);
+			}
+		}
+		$this->getResponse()->setContent(json_encode($response));
+		return sfView::NONE;
+	}
 
+	public function executeQueryMyProductInfo(sfWebRequest $request){
+		$response = array();
+		$this->getResponse()->setContentType("application/json");
+		if($this->verifyGroup($request, $response)){
+			$groupId = $response["group_id"];
+			$group = Doctrine_Core::getTable("Player")->find($groupId);
+			$group->checkMyProductInfo($response);
+		}
+		$this->getResponse()->setContent(json_encode($response));
+		return sfView::NONE;
+	}
+	
+	public function executeQueryInTransactions(sfWebRequest $request){
+		$response = array();
+		$this->getResponse()->setContentType("application/json");
+		if($this->verifyGroup($request, $response)){
+			$groupId = $response["group_id"];
+			$group = Doctrine_Core::getTable("Player")->find($groupId);
+			$group->checkIncomeTransactions($response);
+		}
+		$this->getResponse()->setContent(json_encode($response));
+		return sfView::NONE;
+	}
+
+	public function executeQueryOutTransactions(sfWebRequest $request){
+		$response = array();
+		if($this->verifyGroup($request, $response)){
+			$groupId = $response["group_id"];
+			$group = Doctrine_Core::getTable("Player")->find($groupId);
+			$group->checkOutgoTransactions($response);
+		}
+		$this->getResponse()->setContentType("application/json");
+		$this->getResponse()->setContent(json_encode($response));
+		return sfView::NONE;
+	}
+	
+	public function executeAcceptOffer(sfWebRequest $request){
+		$response = array();
+		$this->getResponse()->setContentType("application/json");
+		if($this->verifyGroup($request, $response)){
+			$groupId = $response["group_id"];
+			$group = Doctrine_Core::getTable("Player")->find($groupId);
+			$transactionId = $request->getParameter("transactionId");
+			if(!$transactionId){
+				$response["status"] = "fail";
+				$response["message"] = "transaction id must be provided";
+			}else{
+				$group->acceptOfferOrReferal($transactionId,$response);
+			}
+		}
+		$this->getResponse()->setContent(json_encode($response));
+		return sfView::NONE;
+	}
+	
 	public function executeQuerySetting(sfWebRequest $request){
 		$response = array();
 		$this->getResponse()->setContentType("application/json");
@@ -189,9 +260,9 @@ class serviceActions extends sfActions
 
 	public function preExecute(){
 		$this->initStatic();
-		parent::preExecute();	
+		parent::preExecute();
 	}
-	
+
 	public function executeQueryProductInfo(sfWebRequest $request){
 		/// intialize the static variables
 		$response = array();

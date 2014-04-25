@@ -15,15 +15,17 @@ abstract class BasePlayerForm extends BaseFormDoctrine
   public function setup()
   {
     $this->setWidgets(array(
-      'id'    => new sfWidgetFormInputHidden(),
-      'name'  => new sfWidgetFormInputText(),
-      'token' => new sfWidgetFormInputText(),
+      'id'     => new sfWidgetFormInputHidden(),
+      'name'   => new sfWidgetFormInputText(),
+      'profit' => new sfWidgetFormInputText(),
+      'token'  => new sfWidgetFormInputText(),
     ));
 
     $this->setValidators(array(
-      'id'    => new sfValidatorChoice(array('choices' => array($this->getObject()->get('id')), 'empty_value' => $this->getObject()->get('id'), 'required' => false)),
-      'name'  => new sfValidatorString(array('max_length' => 32, 'required' => false)),
-      'token' => new sfValidatorString(array('max_length' => 255)),
+      'id'     => new sfValidatorChoice(array('choices' => array($this->getObject()->get('id')), 'empty_value' => $this->getObject()->get('id'), 'required' => false)),
+      'name'   => new sfValidatorString(array('max_length' => 32, 'required' => false)),
+      'profit' => new sfValidatorNumber(array('required' => false)),
+      'token'  => new sfValidatorString(array('max_length' => 255)),
     ));
 
     $this->widgetSchema->setNameFormat('player[%s]');

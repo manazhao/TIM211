@@ -14,4 +14,41 @@ class Transaction extends BaseTransaction
 {
 	const STATUS_PENDING = 0x1;
 	const STATUS_ACCEPTED = 0x2;
+	const STATUS_REFERRED = 0x3;
+	const STATUS_EXPIRED = 0x4;
+	
+	const TYPE_DIRECT_OFFER = 0x11;
+	const TYPE_REFER = 0x12;
+	
+	public static function getStatusName($statusCode){
+		$name = null;
+		switch($statusCode){
+			case self::STATUS_PENDING:
+				$name = "pending";
+				break;
+			case self::STATUS_ACCEPTED:
+				$name = "purchased";
+				break;
+			case self::STATUS_REFERRED:
+				$name = "referred";
+				break;
+			case self::STATUS_EXPIRED:
+				$name = "expired";
+				break;
+		}
+		return $name;
+	}
+	
+	public static function getTransactionTypeName($code){
+		$name = null;
+		switch($code){
+			case self::TYPE_DIRECT_OFFER:
+				$name = "offers";
+				break;
+			case self::TYPE_REFER:
+				$name = "referrals";
+				break;
+		}
+		return $name;
+	}
 }

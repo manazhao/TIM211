@@ -15,6 +15,7 @@ abstract class BaseProductFormFilter extends BaseFormFilterDoctrine
     $this->setWidgets(array(
       'producer' => new sfWidgetFormFilterInput(array('with_empty' => false)),
       'consumer' => new sfWidgetFormFilterInput(array('with_empty' => false)),
+      'holder'   => new sfWidgetFormFilterInput(array('with_empty' => false)),
       'cost'     => new sfWidgetFormFilterInput(array('with_empty' => false)),
       'utility'  => new sfWidgetFormFilterInput(array('with_empty' => false)),
     ));
@@ -22,6 +23,7 @@ abstract class BaseProductFormFilter extends BaseFormFilterDoctrine
     $this->setValidators(array(
       'producer' => new sfValidatorSchemaFilter('text', new sfValidatorInteger(array('required' => false))),
       'consumer' => new sfValidatorSchemaFilter('text', new sfValidatorInteger(array('required' => false))),
+      'holder'   => new sfValidatorSchemaFilter('text', new sfValidatorInteger(array('required' => false))),
       'cost'     => new sfValidatorSchemaFilter('text', new sfValidatorNumber(array('required' => false))),
       'utility'  => new sfValidatorSchemaFilter('text', new sfValidatorNumber(array('required' => false))),
     ));
@@ -46,6 +48,7 @@ abstract class BaseProductFormFilter extends BaseFormFilterDoctrine
       'id'       => 'Number',
       'producer' => 'Number',
       'consumer' => 'Number',
+      'holder'   => 'Number',
       'cost'     => 'Number',
       'utility'  => 'Number',
     );

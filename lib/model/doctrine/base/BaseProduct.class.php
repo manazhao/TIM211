@@ -8,17 +8,20 @@
  * @property integer $id
  * @property integer $producer
  * @property integer $consumer
+ * @property integer $holder
  * @property float $cost
  * @property float $utility
  * 
  * @method integer getId()       Returns the current record's "id" value
  * @method integer getProducer() Returns the current record's "producer" value
  * @method integer getConsumer() Returns the current record's "consumer" value
+ * @method integer getHolder()   Returns the current record's "holder" value
  * @method float   getCost()     Returns the current record's "cost" value
  * @method float   getUtility()  Returns the current record's "utility" value
  * @method Product setId()       Sets the current record's "id" value
  * @method Product setProducer() Sets the current record's "producer" value
  * @method Product setConsumer() Sets the current record's "consumer" value
+ * @method Product setHolder()   Sets the current record's "holder" value
  * @method Product setCost()     Sets the current record's "cost" value
  * @method Product setUtility()  Sets the current record's "utility" value
  * 
@@ -45,6 +48,12 @@ abstract class BaseProduct extends sfDoctrineRecord
              'length' => 2,
              ));
         $this->hasColumn('consumer', 'integer', 2, array(
+             'type' => 'integer',
+             'notnull' => true,
+             'default' => 0,
+             'length' => 2,
+             ));
+        $this->hasColumn('holder', 'integer', 2, array(
              'type' => 'integer',
              'notnull' => true,
              'default' => 0,

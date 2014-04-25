@@ -9,6 +9,9 @@ Player:
    autoincrement: true
   name:
    type: string(32)
+  profit:
+   type: float
+   default: 0
   token:
    type: string(255)
    notnull: true
@@ -27,6 +30,10 @@ Product:
    type: integer(2)
    notnull: true
    default: 0
+  holder:
+   type: integer(2)
+   notnull: true
+   default: 0
   cost:
    type: float
    notnull: true
@@ -36,27 +43,14 @@ Product:
    notnull: true
    default: 0
 
-GroupProduct:
- columns:
-  id:
-   type: integer
-   primary: true
-   autoincrement: true
-  group_id:
-   type: integer(2)
-   notnull: true
-   default: 0
-  product_id:
-   type: integer(2)
-   notnull: true
-   default: 0
-
 Transaction:
  columns:
   id:
    type: integer
    primary: true
    autoincrement: true
+  type:
+   type: integer(1)
   from_id:
    type: integer(2)
    notnull: true
@@ -64,6 +58,9 @@ Transaction:
   to_id:
    type: integer(2)
    notnull: true
+   default: 0
+  refer_id:
+   type: integer
    default: 0
   product:
    type: integer(2)
@@ -73,10 +70,23 @@ Transaction:
    type: float
    notnull: true
    default: 0
-  start_time:
-   type: datetime
-  end_time:
-   type: datetime
+  first_ref_fee:
+   type: float
+   notnull: true
+   default: 0
+  second_ref_fee:
+   type: float
+   notnull: true
+   default: 0
+  ref_degree:
+   type: integer(1)
+   default: 0
+  rnd:
+   type: integer(2)
+   default: 0
+  expire:
+   type: integer(2)
+   default: 0
   status:
    type: integer(1)
    notnull: true
