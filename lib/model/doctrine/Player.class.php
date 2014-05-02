@@ -25,15 +25,15 @@ class Player extends BasePlayer
 	}
 	
 	public function checkMyProductInfo(&$response){
+		$response["produced"] = array();
+		$response["sell"] = array();
+		$response["consumed"] = array();
 		/// get products produced by me
 		$produced = Doctrine_Core::getTable("Product")->findByProducer($this->getId());
-		$response["produced"] = array();
-		$response["to.sell"] = array();
-		$response["consumed"] = array();
 		foreach($produced as $product){
 			$response["produced"][] = array("id" => $product->getId(), "cost" => $product->getCost());				
 			if($product->getHolder() == $this->getId()){
-				$response["to.sell"][] = array("id" => $product->getId(), "cost" => $product->getCost());
+				$response["sell"][] = array("id" => $product->getId(), "cost" => $product->getCost());
 			}
 		}
 		$consumed = Doctrine_Core::getTable("Product")->findByConsumer($this->getId());
@@ -66,10 +66,9 @@ class Player extends BasePlayer
 			$response[Transaction::getTransactionTypeName($type)][Transaction::getStatusName($status)][] = 
 			array("id" => $transaction->getId(), "product.id" => $transaction->getProduct(),"price" => $transaction->getPrice(),
 					"first.ref.fee" => $transaction->getFirstRefFee(),
-					"second.ref.fee" => $transaction->getSecondRefFee(),"from.id" => $transaction->getFromId(),"post.rnd" => $transaction->getRnd(),
+					"second.ref.fee" => $transaction->getSecondRefFee(),"from.id" => $transaction->getFromId(),"to.id" => $transaction->getToId(), "post.period" => $transaction->getRnd(),
 					"ref.degree" => $transaction->getRefDegree());
 		}
-		
 	}
 	
 	
@@ -94,8 +93,8 @@ class Player extends BasePlayer
 			$response[Transaction::getTransactionTypeName($type)][Transaction::getStatusName($status)][] =
 			array("id" => $transaction->getId(), "product.id" => $transaction->getProduct(),"price" => $transaction->getPrice(),
 					"first.ref.fee" => $transaction->getFirstRefFee(),
-					"second.ref.fee" => $transaction->getSecondRefFee(),"from.id" => $transaction->getFromId(),"post.rnd" => $transaction->getRnd(),
-					"ref.degree" => $transaction->getRefDegree());
+					"second.ref.fee" => $transaction->getSecondRefFee(),"from.id" => $transaction->getFromId(),"to.id" => $transaction->getToId(), "post.period" => $transaction->getRnd(),
+					"ref.degree" => $transaction->getRefDegree(),"ref.trans.id" => $transaction->getReferId());
 		}
 	}
 	
@@ -122,7 +121,7 @@ class Player extends BasePlayer
 		}
 		/// check whether the transaction expired
 		$expirePeriod = $transaction->getExpire();
-		if($expirePeriod > $curPeriod){
+		if($expirePeriod < $curPeriod){
 			$transaction->setStatus(Transaction::STATUS_EXPIRED);
 			$transaction->save();
 			$response["status"] = "fail";
@@ -146,6 +145,8 @@ class Player extends BasePlayer
 		$prevTransaction = $transaction;
 		$refFee = 0;
 		while($prevTransaction){
+			/// update the transaction status as "accepted" for the same product involved
+			/// both the seller and referrers will see it
 			$prevTransaction->setStatus(Transaction::STATUS_ACCEPTED);
 			$prevTransaction->save();
 			$refDegree = $prevTransaction->getRefDegree();
@@ -161,11 +162,15 @@ class Player extends BasePlayer
 				$refFee += $prevTransaction->getFirstRefFee();
 			}
 			if($refDegree > 0){
+				/// add the referral fees to the referrers
 				$fromGroup->setProfit($fromGroup->getProfit() + $profit);
+				$fromGroup->save();
 				$prevTransaction = Doctrine_Core::getTable("Transaction")->find($prevTransaction->getReferId());
 			}else{
+				/// calculate the profit for the seller
 				$cost = $product->getCost();
 				$fromGroup->setProfit($fromGroup->getProfit() + $prevTransaction->getPrice() - $cost - $refFee);
+				$fromGroup->save();
 				$prevTransaction = null;
 			}
 		}		
@@ -186,6 +191,7 @@ class Player extends BasePlayer
 			$response["message"] = "price, referral fees must be positive numeric";
 			return;
 		}
+		
 		if($toGroupId == $this->getId()){
 			$response["status"] = "fail";
 			$response["message"] = "you are not allowed to sell products to yourself";
@@ -224,6 +230,7 @@ class Player extends BasePlayer
 			$response["message"] = "you already hit the maximum number of product offers per trading period: " . serviceActions::$SETTING["max.offer.send"];
 			return;
 		}
+		
 		/// post the offer
 		$transaction = new Transaction();
 		$transaction->setFromId($this->getId());
@@ -232,12 +239,14 @@ class Player extends BasePlayer
 		$transaction->setType(Transaction::TYPE_DIRECT_OFFER);
 		$transaction->setPrice($price);
 		$transaction->setRnd($clockInfo["period.idx"]);
+		
 		/// set when the offer will expire
 		$transaction->setExpire($clockInfo["period.idx"] + serviceActions::$SETTING["offer.expire"]);
 		$transaction->setFirstRefFee($firstRefFee);
 		$transaction->setSecondRefFee($secondRefFee);
 		$transaction->setStatus(Transaction::STATUS_PENDING);
 		$transaction->save();
+		
 		/// change the ownership of the product
 		$product = Doctrine_Core::getTable("Product")->find($productId);
 		$product->setHolder(0);
@@ -274,7 +283,6 @@ class Player extends BasePlayer
 		/// check whether it's a offering round
 		if(!$isRndA){
 			$response["status"] = "fail";	/// check whether offer has expired
-			$expire = $transaction->getExpire();
 			$response["message"] = "please wait until next offering circle";
 			return;
 		}

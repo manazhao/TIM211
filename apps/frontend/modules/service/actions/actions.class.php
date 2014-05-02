@@ -129,6 +129,7 @@ class serviceActions extends sfActions
 				/// valid token, try to identify the group id
 				$groupId = $player->getId();
 				$response["group_id"] = $groupId;
+				$response["profit"] = $player->getProfit();
 			}
 			return $player;
 		}
@@ -229,7 +230,7 @@ class serviceActions extends sfActions
 		return sfView::NONE;
 	}
 	
-	public function executeAcceptOffer(sfWebRequest $request){
+	public function executeAcceptOfferOrReferral(sfWebRequest $request){
 		$response = array();
 		$this->getResponse()->setContentType("application/json");
 		if($this->verifyGroup($request, $response)){
@@ -253,6 +254,9 @@ class serviceActions extends sfActions
 		if($this->verifyGroup($request, $response)){
 			$response["num_groups"] = self::$NUM_GROUPS;
 			$response["num_products"] = self::$NUM_PRODUCTS;
+			$response["max.offer.send"] = self::$SETTING["max.offer.send"];
+			$response["max.ref.send"] = self::$SETTING["max.ref.send"];
+			$response["max.offer.recv"] = self::$SETTING["max.offer.recv"];
 		}
 		$this->getResponse()->setContent(json_encode($response));
 		return sfView::NONE;
