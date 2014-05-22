@@ -75,7 +75,7 @@ EOF;
 		$databaseManager = new sfDatabaseManager($this->configuration);
 		$connection = $databaseManager->getDatabase($options['connection'])->getConnection();
 		$groupProductFile = $options["group-product-file"];
-		$configInfo = $options["exp-config"];
+		$configInfo = $options["config"];
 		if(!file_exists($groupProductFile)){
 			echo "file not exist, please check\n" ;
 			return;
