@@ -10,7 +10,9 @@ class importProductTask extends sfBaseTask
 				new sfCommandOption('env', null, sfCommandOption::PARAMETER_REQUIRED, 'The environment', 'dev'),
 				new sfCommandOption('connection', null, sfCommandOption::PARAMETER_REQUIRED, 'The connection name', 'doctrine'),
 				// add your own options here
-				new sfCommandOption('group-product-file', null, sfCommandOption::PARAMETER_REQUIRED, 'group product information', null)
+				new sfCommandOption('group-product-file', null, sfCommandOption::PARAMETER_REQUIRED, 'group product information', null),
+				new sfCommandOption('config', null, sfCommandOption::PARAMETER_OPTIONAL, 'experiment configuration', null)
+				
 				
 		));
 
@@ -44,23 +46,82 @@ EOF;
 		}
 	}
 	
+	protected function pairTeams($teamA = null, $teamB = null){
+		if(!is_null($teamA) && !is_null($teamB) && count($teamA) == count($teamB)){
+			/// force the producer and consumer relationship
+			for($i = 0; $i < count($teamA); $i++){
+				$t1 = $teamA[$i];
+				$t2 = $teamB[$i];
+				/// $t1 as producer and $t2 as consumer
+				/// select products produced by $t1
+				$t1Products = Doctrine_core::getTable("Product")->findByProducer($t1);
+				foreach($t1Products as $product){
+					$product->setConsumer($t2);
+					$product->save();
+				}
+				$t2Products = Doctrine_core::getTable("Product")->findByProducer($t2);
+				foreach($t2Products as $product){
+					$product->setConsumer($t1);
+					$product->save();
+				}
+			}
+		}
+		/// done!
+	}
+	
 	protected function execute($arguments = array(), $options = array())
 	{
 		// initialize the database connection
 		$databaseManager = new sfDatabaseManager($this->configuration);
 		$connection = $databaseManager->getDatabase($options['connection'])->getConnection();
 		$groupProductFile = $options["group-product-file"];
+		$configInfo = $options["exp-config"];
 		if(!file_exists($groupProductFile)){
 			echo "file not exist, please check\n" ;
 			return;
 		}
+		# 
+		$generatePlayer = true;
+		$teamA = array();
+		$teamB = array();
+		/// read special configuration
+		if(isset($options["config"])){
+			$configFile = $options["config"];
+			if(!file_exists($configFile)){
+				echo "configuration file ". $configFile . " does not exist, please check\n";
+				return;
+			}
+			/// read in configuration
+			$config = parse_ini_file($configFile);
+			if(isset($config["generate.player"])){
+				/// need to generate player information or not
+				$generatePlayer = $config["generate.player"];
+			}
+			/// now read team pair information
+			if(isset($config["team.pair"])){
+				$teamPairs = $config["team.pair"];
+				foreach($teamPairs as $tmpPair){
+					/// split by -
+					$tmpTeams = explode("-", $tmpPair);
+					$teamA[] = $tmpTeams[0];
+					$teamB[] = $tmpTeam[1];
+				}
+			}
+			print_r($config);
+		}
+	
+		return;
 		// add your code here
 		/// read the file
 		$fileContent = file_get_contents($groupProductFile);
 		$groupProductsJSON = json_decode($fileContent,true);
 		$numGroups = $groupProductsJSON["num_groups"];
 		$numProducts = $groupProductsJSON["num_products"];
-		$this->generatePlayers($numGroups);
+		/// if players are needed to be (re)generated
+		if($generatePlayer){
+			$this->generatePlayers($numGroups);
+		}
+		/// 
 		$this->generateProducts($numProducts);
 		/// extract for each group and insert into datatabase
 		foreach($groupProductsJSON["grp_prod"] as $arrIdx => $groupProduct){
@@ -96,5 +157,6 @@ EOF;
 				}
 			}
 		}
+		pairTeams($teamA,$teamB);
 	}
 }
