@@ -110,7 +110,6 @@ EOF;
 			print_r($config);
 		}
 	
-		return;
 		// add your code here
 		/// read the file
 		$fileContent = file_get_contents($groupProductFile);
