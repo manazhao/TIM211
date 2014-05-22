@@ -288,7 +288,7 @@ class Player extends BasePlayer
 		}
 		/// check whether offer has expired
 		$expire = $transaction->getExpire();
-		if($expire > $curPeriod){
+		if($curPeriod > $expire){
 			$response["status"] = "fail";
 			$response["message"] = "offer has expired";
 			return;
