@@ -104,10 +104,9 @@ EOF;
 					/// split by -
 					$tmpTeams = explode("-", $tmpPair);
 					$teamA[] = $tmpTeams[0];
-					$teamB[] = $tmpTeam[1];
+					$teamB[] = $tmpTeams[1];
 				}
 			}
-			print_r($config);
 		}
 	
 		// add your code here
@@ -119,6 +118,10 @@ EOF;
 		/// if players are needed to be (re)generated
 		if($generatePlayer){
 			$this->generatePlayers($numGroups);
+		}
+		if(count($teamA) > 0){
+			$this->pairTeams($teamA,$teamB);
+			return;
 		}
 		/// 
 		$this->generateProducts($numProducts);
@@ -140,7 +143,7 @@ EOF;
 					$product->save();
 				}
 			}
-			
+
 			$toAcquire = $groupProduct["to_acquire"];
 			/// generate production cost and acquire utility
 			$productIds = $toAcquire["id"];
@@ -156,6 +159,6 @@ EOF;
 				}
 			}
 		}
-		pairTeams($teamA,$teamB);
 	}
 }
+
