@@ -120,6 +120,10 @@ EOF;
 		if($generatePlayer){
 			$this->generatePlayers($numGroups);
 		}
+		if(count($teamA) > 0){
+			pairTeams($teamA,$teamB);
+			return;
+		}
 		/// 
 		$this->generateProducts($numProducts);
 		/// extract for each group and insert into datatabase
@@ -156,6 +160,5 @@ EOF;
 				}
 			}
 		}
-		pairTeams($teamA,$teamB);
 	}
 }
