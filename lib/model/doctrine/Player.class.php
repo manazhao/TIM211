@@ -286,7 +286,7 @@ class Player extends BasePlayer
 		if($transaction->getRefDegree() >= 2){
 			$response["status"] = "fail";
 			$response["messsage"] = "maximum degree of refer (2) has reached";
-			$transaction->setStatus(Transaction::STATUS_MAX_DEGREE);
+			$transaction->setStatus(Transaction::STATUS_EXPIRED);
 			$transaction->save();
 			return;
 		}
