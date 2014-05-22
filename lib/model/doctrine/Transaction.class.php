@@ -16,6 +16,8 @@ class Transaction extends BaseTransaction
 	const STATUS_ACCEPTED = 0x2;
 	const STATUS_REFERRED = 0x3;
 	const STATUS_EXPIRED = 0x4;
+	/// maximum degree of refer has reached
+	const STATUS_MAX_DEGREE = 0x5;
 	
 	const TYPE_DIRECT_OFFER = 0x11;
 	const TYPE_REFER = 0x12;

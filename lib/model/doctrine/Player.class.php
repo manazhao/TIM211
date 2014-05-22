@@ -277,6 +277,20 @@ class Player extends BasePlayer
 			$response["message"] = "you can only refer offers that were made to you";
 			return;
 		}
+		/// check whether the transaction is still pending
+		if($transaction->getStatus() != Transaction::STATUS_PENDING){
+			$response["status"] = "fail";
+			$response["message"] = "the transaction is not in the referring status";
+			return;
+		}
+		if($transaction->getRefDegree() >= 2){
+			$response["status"] = "fail";
+			$response["messsage"] = "maximum degree of refer (2) has reached";
+			$transaction->setStatus(Transaction::STATUS_MAX_DEGREE);
+			$transaction->save();
+			return;
+		}
+		
 		$clockInfo = serviceActions::getClockInfo();
 		$curPeriod = $clockInfo["period.idx"];
 		$isRndA = $clockInfo["rnd.a"];
@@ -298,7 +312,7 @@ class Player extends BasePlayer
 		->andWhere("q.type=?",Transaction::TYPE_REFER)->andWhere("q.rnd = ?", $curPeriod)->execute();
 		if(count($results) == serviceActions::$SETTING["max.offer.send"] ){
 			$response["status"] = "fail";
-			$response["message"] = "you already hit the maximum number of product referrals per trading period:" + serviceActions::$SETTING["max.offer.send"];
+			$response["message"] = "you already hit the maximum number of product referrals per trading period:" . serviceActions::$SETTING["max.offer.send"];
 			return;
 		}
 		/// good to go
