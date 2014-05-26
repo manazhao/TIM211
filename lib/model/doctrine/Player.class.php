@@ -141,6 +141,8 @@ class Player extends BasePlayer
 		$utility = $product->getUtility();
 		$buyerPayoff = $utility - $price;
 		$this->setProfit($this->getProfit() + $buyerPayoff);
+		/// a critical bug: forget to save the profit update
+		$this->save();
 		/// also generate the profit for the referrals and sellers
 		$prevTransaction = $transaction;
 		$refFee = 0;
