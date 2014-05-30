@@ -135,6 +135,9 @@ class Player extends BasePlayer
 			$response["message"] = "only buy product you need";
 			return;
 		}
+		/// change the holder of the product to the buyer
+		$product->setHolder($this->getId());
+		$product->save();
 		/// generate buyer payoff
 		$refDegree = $transaction->getRefDegree();
 		$price = $transaction->getPrice();
