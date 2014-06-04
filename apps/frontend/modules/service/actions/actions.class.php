@@ -172,7 +172,10 @@ class serviceActions extends sfActions
 	
 	public function executeCalculateProfit(sfWebRequest $request){
 		$groupProfit = Transaction::calculateProfit();
-		print_r($groupProfit);
+		foreach($groupProfit as $grpId => $tmpGrp){
+			echo implode(",", array($grpId, $tmpGrp["sell"], $tmpGrp["buy"], $tmpGrp["total"])) . "<br/>";
+		}
+		# print_r($groupProfit);
 		return sfView::NONE;
 	}
 
@@ -211,7 +214,7 @@ class serviceActions extends sfActions
 		$this->getResponse()->setContent(json_encode($response));
 		return sfView::NONE;
 	}
-	
+
 	public function executeQueryInTransactions(sfWebRequest $request){
 		$response = array();
 		$this->getResponse()->setContentType("application/json");
@@ -235,7 +238,7 @@ class serviceActions extends sfActions
 		$this->getResponse()->setContent(json_encode($response));
 		return sfView::NONE;
 	}
-	
+
 	public function executeAcceptOfferOrReferral(sfWebRequest $request){
 		$response = array();
 		$this->getResponse()->setContentType("application/json");
@@ -253,7 +256,7 @@ class serviceActions extends sfActions
 		$this->getResponse()->setContent(json_encode($response));
 		return sfView::NONE;
 	}
-	
+
 	public function executeQuerySetting(sfWebRequest $request){
 		$response = array();
 		$this->getResponse()->setContentType("application/json");

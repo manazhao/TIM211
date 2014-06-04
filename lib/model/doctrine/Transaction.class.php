@@ -48,7 +48,7 @@ class Transaction extends BaseTransaction
 		$groupProfit = array();
 		$allGroups = Doctrine_Core::getTable("Player")->createQuery("q")->execute();
 		foreach($allGroups as $group){
-			$groupProfit[$group->getId()] = 0;
+			$groupProfit[$group->getId()] = array("sell" => 0, "total" => 0);
 		}
 		
 		$allTransactions = Doctrine_Core::getTable("Transaction")->createQuery("q")->execute();
@@ -67,29 +67,31 @@ class Transaction extends BaseTransaction
 				$producer = $product->getProducer();
 				$cost = $product->getCost();
 				$utility = $product->getUtility();
-				
+#				echo implode("\t",array($product->getId(),$cost, $price,$frf,$srf, $utility, $producer, $consumer, $fromGroup, $toGroup)) . "</br>";	
 				switch($refDegree){
 					case 0:
 						/// profit for producer
-						$groupProfit[$fromGroup] += ($price - $cost);
-						$fromGroupProfit = $price - $cost;
+						$groupProfit[$fromGroup]["sell"] += ($price - $cost);
 						/// profit for consumer
-						$groupProfit[$consumer] += ($utility - $price);
+						$groupProfit[$consumer]["buy"] += ($utility - $price);
 						break;
 					case 1:
 						/// generate the first degree referral fee for the referrer
-						$groupProfit[$fromGroup] += $frf;
+						$groupProfit[$fromGroup]["sell"] += $frf;
 						/// take the referral fee from the producer
-						$groupProfit[$producer] -= $frf;
+						$groupProfit[$producer]["sell"] -= $frf;
 						break;
 					case 2:
 						/// generate the first degree referral fee for the referrer
-						$groupProfit[$fromGroup] = $srf;
+						$groupProfit[$fromGroup]["sell"] += $srf;
 						/// take the referral fee from the producer
-						$groupProfit[$producer] -= $srf;
+						$groupProfit[$producer]["sell"] -= $srf;
 						break;
 				}
 			}
+		}
+		foreach($allGroups as $group){
+			$groupProfit[$group->getId()]["total"] = $groupProfit[$group->getId()]["sell"] + $groupProfit[$group->getId()]["buy"];
 		}
 		return $groupProfit;
 	}
