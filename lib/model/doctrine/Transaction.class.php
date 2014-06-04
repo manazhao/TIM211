@@ -48,7 +48,7 @@ class Transaction extends BaseTransaction
 		$groupProfit = array();
 		$allGroups = Doctrine_Core::getTable("Player")->createQuery("q")->execute();
 		foreach($allGroups as $group){
-			$groupProfit[$group->getId()] = array("sell" => 0, "total" => 0);
+			$groupProfit[$group->getId()] = array("sell" => 0, "buy" => 0, total" => 0);
 		}
 		
 		$allTransactions = Doctrine_Core::getTable("Transaction")->createQuery("q")->execute();
