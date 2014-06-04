@@ -41,6 +41,59 @@ class Transaction extends BaseTransaction
 		return $name;
 	}
 	
+	/**
+	 * calculate the profit for each group per round
+	 */
+	public static function calculateProfit(){
+		$groupProfit = array();
+		$allGroups = Doctrine_Core::getTable("Player")->createQuery("q")->execute();
+		foreach($allGroups as $group){
+			$groupProfit[$group->getId()] = 0;
+		}
+		
+		$allTransactions = Doctrine_Core::getTable("Transaction")->createQuery("q")->execute();
+		foreach($allTransactions as $transaction){
+			/// generate profit for each transaction
+			if($transaction->getStatus() == Transaction::STATUS_ACCEPTED){
+				$refDegree = $transaction->getRefDegree();
+				$fromGroup = $transaction->getFromId();
+				$toGroup = $transaction->getToId();
+				$rnd = $transaction->getRnd();
+				$price = $transaction->getPrice();
+				$frf = $transaction->getFirstRefFee();
+				$srf = $transaction->getSecondRefFee();
+				$product = Doctrine_Core::getTable("Product")->find($transaction->getProduct());
+				$consumer = $product->getConsumer();
+				$producer = $product->getProducer();
+				$cost = $product->getCost();
+				$utility = $product->getUtility();
+				
+				switch($refDegree){
+					case 0:
+						/// profit for producer
+						$groupProfit[$fromGroup] += ($price - $cost);
+						$fromGroupProfit = $price - $cost;
+						/// profit for consumer
+						$groupProfit[$consumer] += ($utility - $price);
+						break;
+					case 1:
+						/// generate the first degree referral fee for the referrer
+						$groupProfit[$fromGroup] += $frf;
+						/// take the referral fee from the producer
+						$groupProfit[$producer] -= $frf;
+						break;
+					case 2:
+						/// generate the first degree referral fee for the referrer
+						$groupProfit[$fromGroup] = $srf;
+						/// take the referral fee from the producer
+						$groupProfit[$producer] -= $srf;
+						break;
+				}
+			}
+		}
+		return $groupProfit;
+	}
+	
 	public static function getTransactionTypeName($code){
 		$name = null;
 		switch($code){

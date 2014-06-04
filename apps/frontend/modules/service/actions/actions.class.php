@@ -169,6 +169,12 @@ class serviceActions extends sfActions
 		$this->getResponse()->setContent(json_encode($response));
 		return sfView::NONE;
 	}
+	
+	public function executeCalculateProfit(sfWebRequest $request){
+		$groupProfit = Transaction::calculateProfit();
+		print_r($groupProfit);
+		return sfView::NONE;
+	}
 
 	public function executeReferProduct(sfWebRequest $request){
 		/// offer a product to a group

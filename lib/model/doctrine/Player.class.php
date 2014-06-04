@@ -23,7 +23,7 @@ class Player extends BasePlayer
 		}
 		return true;
 	}
-	
+
 	public function checkMyProductInfo(&$response){
 		$response["produced"] = array();
 		$response["sell"] = array();
@@ -31,7 +31,7 @@ class Player extends BasePlayer
 		/// get products produced by me
 		$produced = Doctrine_Core::getTable("Product")->findByProducer($this->getId());
 		foreach($produced as $product){
-			$response["produced"][] = array("id" => $product->getId(), "cost" => $product->getCost());				
+			$response["produced"][] = array("id" => $product->getId(), "cost" => $product->getCost());
 			if($product->getHolder() == $this->getId()){
 				$response["sell"][] = array("id" => $product->getId(), "cost" => $product->getCost());
 			}
@@ -41,7 +41,7 @@ class Player extends BasePlayer
 			$response["consumed"][] = array("id" => $product->getId(), "utility" => $product->getUtility());
 		}
 	}
-	
+
 	/**
 	 * check products that are offered or referred to me
 	 */
@@ -63,15 +63,15 @@ class Player extends BasePlayer
 				$transaction->save();
 			}
 			$type = $transaction->getType();
-			$response[Transaction::getTransactionTypeName($type)][Transaction::getStatusName($status)][] = 
+			$response[Transaction::getTransactionTypeName($type)][Transaction::getStatusName($status)][] =
 			array("id" => $transaction->getId(), "product.id" => $transaction->getProduct(),"price" => $transaction->getPrice(),
 					"first.ref.fee" => $transaction->getFirstRefFee(),
 					"second.ref.fee" => $transaction->getSecondRefFee(),"from.id" => $transaction->getFromId(),"to.id" => $transaction->getToId(), "post.period" => $transaction->getRnd(),
 					"ref.degree" => $transaction->getRefDegree());
 		}
 	}
-	
-	
+
+
 	public function checkOutgoTransactions(&$response){
 		$transactions = Doctrine_Core::getTable("Transaction")->findByFromId($this->getId());
 		/// categorize the transactions by their status
@@ -97,6 +97,18 @@ class Player extends BasePlayer
 					"ref.degree" => $transaction->getRefDegree(),"ref.trans.id" => $transaction->getReferId());
 		}
 	}
+
+	protected function _propogateStatus(Transaction $transaction){
+		$status = $transaction->getStatus();
+		while($transaction){
+			$transaction->setStatus($status);
+			$transaction->save();
+			$refId = $transaction->getReferId();
+			if($refId > 0){
+				$transaction = Doctrine_Core::getTable("Transaction")->find($refId);
+			}
+		}	
+	}
 	
 	public function acceptOfferOrReferal($transactionId, &$response){
 		/// check the transaction is made to current user
@@ -106,11 +118,20 @@ class Player extends BasePlayer
 			$response["message"] = "invalid transaction id";
 			return;
 		}
+		/// fixed this bug: client can accept the same offer multiple times and generate profit accordingly....
+		/// only pending offers/referrals can be accepted
+		if($transaction->getStatus() != Transaction::STATUS_PENDING){
+			$response["status"] = "fail";
+			$response["message"] = "only pending offers/referrals can be accepted";
+			return;
+		}
+
 		if($transaction->getToId() != $this->getId()){
 			$response["status"] = "fail";
 			$response["message"] = "you can only accept offer or referral that is targeted on you";
 			return;
 		}
+
 		$clockInfo = serviceActions::getClockInfo();
 		$curPeriod = $clockInfo["period.idx"];
 		$isRndB = $clockInfo["rnd.b"];
@@ -124,10 +145,13 @@ class Player extends BasePlayer
 		if($expirePeriod < $curPeriod){
 			$transaction->setStatus(Transaction::STATUS_EXPIRED);
 			$transaction->save();
+			/// propogate the status to referrers and producer
+			$this->_propogateStatus($transaction);
 			$response["status"] = "fail";
 			$response["message"] = "the offer/referral has expired";
 			return;
 		}
+		
 		/// check whether it's the product the group need
 		$product = Doctrine_Core::getTable("Product")->find($transaction->getProduct());
 		if($product->getConsumer() != $this->getId()){
@@ -135,6 +159,7 @@ class Player extends BasePlayer
 			$response["message"] = "only buy product you need";
 			return;
 		}
+		
 		/// change the holder of the product to the buyer
 		$product->setHolder($this->getId());
 		$product->save();
@@ -158,30 +183,36 @@ class Player extends BasePlayer
 			$fromGroup = Doctrine_Core::getTable("Player")->find($prevTransaction->getFromId());
 			/// get the second degree referral fee
 			$profit = 0;
+			
+			/// second degree referrer
 			if($refDegree == 2){
 				$profit = $prevTransaction->getSecondRefFee();
 				$refFee += $prevTransaction->getSecondRefFee();
 			}
+			
+			/// first degree referrer
 			if($refDegree == 1){
 				$profit = $prevTransaction->getFirstRefFee();
 				$refFee += $prevTransaction->getFirstRefFee();
 			}
-			if($refDegree > 0){
-				/// add the referral fees to the referrers
-				$fromGroup->setProfit($fromGroup->getProfit() + $profit);
-				$fromGroup->save();
-				$prevTransaction = Doctrine_Core::getTable("Transaction")->find($prevTransaction->getReferId());
-			}else{
-				/// calculate the profit for the seller
-				$cost = $product->getCost();
-				$fromGroup->setProfit($fromGroup->getProfit() + $prevTransaction->getPrice() - $cost - $refFee);
-				$fromGroup->save();
-				$prevTransaction = null;
+			
+			/// producer
+			if($refDegree == 0){
+				$profit = $prevTransaction->getPrice() - $product->getCost() - $refFee;
 			}
-		}		
+			
+			/// update the profit
+			$fromGroup->setProfit($fromGroup->getProfit() + $profit);
+			$fromGroup->save();
+			
+			if($refDegree > 0)
+				$prevTransaction = Doctrine_Core::getTable("Transaction")->find($prevTransaction->getReferId());
+			else
+				$prevTransaction = null;
+		}
 	}
-	
-	
+
+
 	/**
 	 *
 	 * @param unknown_type $toGroupId the group that will take the offer
@@ -196,7 +227,7 @@ class Player extends BasePlayer
 			$response["message"] = "price, referral fees must be positive numeric";
 			return;
 		}
-		
+
 		if($toGroupId == $this->getId()){
 			$response["status"] = "fail";
 			$response["message"] = "you are not allowed to sell products to yourself";
@@ -218,7 +249,7 @@ class Player extends BasePlayer
 			$response["message"] = "only the producer and the owner can sell the product";
 			return;
 		}
-		
+
 		/// check the clock
 		$clockInfo = serviceActions::getClockInfo();
 		/// $clockInfo["rnd.idx"] indicates whether it's making offer round or receiving offer round
@@ -235,7 +266,7 @@ class Player extends BasePlayer
 			$response["message"] = "you already hit the maximum number of product offers per trading period: " . serviceActions::$SETTING["max.offer.send"];
 			return;
 		}
-		
+
 		/// post the offer
 		$transaction = new Transaction();
 		$transaction->setFromId($this->getId());
@@ -244,20 +275,20 @@ class Player extends BasePlayer
 		$transaction->setType(Transaction::TYPE_DIRECT_OFFER);
 		$transaction->setPrice($price);
 		$transaction->setRnd($clockInfo["period.idx"]);
-		
+
 		/// set when the offer will expire
 		$transaction->setExpire($clockInfo["period.idx"] + serviceActions::$SETTING["offer.expire"]);
 		$transaction->setFirstRefFee($firstRefFee);
 		$transaction->setSecondRefFee($secondRefFee);
 		$transaction->setStatus(Transaction::STATUS_PENDING);
 		$transaction->save();
-		
+
 		/// change the ownership of the product
 		$product = Doctrine_Core::getTable("Product")->find($productId);
 		$product->setHolder(0);
 		$product->save();
 	}
-	
+
 	public function referProduct($toGroupId, $transactionId, &$response){
 		if($toGroupId == $this->getId()){
 			$response["status"] = "fail";
@@ -293,9 +324,10 @@ class Player extends BasePlayer
 			$response["messsage"] = "maximum degree of refer (2) has reached";
 			$transaction->setStatus(Transaction::STATUS_EXPIRED);
 			$transaction->save();
+			$this->_propogateStatus($transaction);
 			return;
 		}
-		
+
 		$clockInfo = serviceActions::getClockInfo();
 		$curPeriod = $clockInfo["period.idx"];
 		$isRndA = $clockInfo["rnd.a"];
