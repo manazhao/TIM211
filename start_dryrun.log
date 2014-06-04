@@ -1,0 +1,4 @@
+/var/www/html/zq/TIM211/start_server.sh: line 3: service: command not found
+Starting httpd: [  OK  ]
+Starting httpd: [  OK  ]
+Starting httpd: [  OK  ]

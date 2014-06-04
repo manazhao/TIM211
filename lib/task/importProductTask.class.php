@@ -121,6 +121,7 @@ EOF;
 		}
 		if(count($teamA) > 0){
 			$this->pairTeams($teamA,$teamB);
+			return;
 		}
 		/// 
 		$this->generateProducts($numProducts);
